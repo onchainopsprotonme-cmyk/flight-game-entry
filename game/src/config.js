@@ -70,3 +70,15 @@ export const INPUT = {
   deadzone: 0.12,
   mouseSensitivity: 0.002,
 };
+
+export const DEBUG = {
+  showCollisionBoxes: false,
+  showRingNumbers: true,
+  logFrameTime: false,
+};
+
+export const AUDIO = {
+  enabled: true,
+  engineVolume: 0.5,
+  windVolume: 0.3,
+};
