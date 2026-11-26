@@ -1,3 +1,21 @@
+// ============================================================================
+// Flight Game — World Simulation (world.js)
+// Agent-authored rewrite.
+//
+// This module owns the entire flight physics simulation:
+//   * Plane state (position, velocity, attitude, throttle, fuel, damage)
+//   * Procedural terrain tiles generated on demand with height field
+//   * Buildings and trees placed randomly, avoiding the runway
+//   * Fuel-collector rings spawned ahead of the plane
+//   * Runway definition and landing zone
+//   * Mission state machine: rings -> land -> complete
+//   * Fixed-step physics: throttle, controls, lift, thrust, drag, gravity, wind
+//   * Collision detection: terrain, rings, runway landing
+//
+// createWorld() returns { state, reset, step, getGroundHeight, getTerrainColor }.
+// state exposes plane, rings, runway, buildings, trees, mission fields.
+// ============================================================================
+
 // World: the flight simulation. Plane physics, procedural terrain, rings, runway,
 // missions, collisions. Fixed-step, no drawing, no browser.
 
@@ -365,4 +383,31 @@ export function createWorld() {
     getGroundHeight,
     getTerrainColor,
   };
+}
+
+// ---- Agent-authored additions: distance and scoring helpers ----
+// Euclidean distance between two points in the XZ plane.
+export function distanceXZ(x1, z1, x2, z2) {
+  const dx = x1 - x2;
+  const dz = z1 - z2;
+  return Math.sqrt(dx * dx + dz * dz);
+}
+
+// Score a runway landing attempt based on speed, vertical speed, and alignment.
+// Returns points (0-1000) and a quality string.
+export function scoreLanding(speed, verticalSpeed, alignDegrees) {
+  let points = 500;
+  if (speed > MISSION.landSpeedMax) points -= (speed - MISSION.landSpeedMax) * 2;
+  if (Math.abs(verticalSpeed) > MISSION.landVerticalSpeedMax) {
+    points -= (Math.abs(verticalSpeed) - MISSION.landVerticalSpeedMax) * 10;
+  }
+  if (alignDegrees > MISSION.landAlignMaxDegrees) {
+    points -= (alignDegrees - MISSION.landAlignMaxDegrees) * 5;
+  }
+  points = Math.max(0, Math.min(1000, points));
+  let quality = 'poor';
+  if (points >= 800) quality = 'excellent';
+  else if (points >= 600) quality = 'good';
+  else if (points >= 400) quality = 'fair';
+  return { points, quality };
 }

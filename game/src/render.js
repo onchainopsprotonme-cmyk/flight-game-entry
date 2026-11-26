@@ -1,5 +1,24 @@
+// ============================================================================
+// Flight Game — Renderer (render.js)
+// Agent-authored rewrite.
+//
+// This module owns all Three.js rendering for the flight game:
+//   * Scene, camera, lighting (ambient, sun directional, fill)
+//   * Procedural ground tiles with per-tile colors and fog
+//   * Runway geometry and markings
+//   * Collectible rings (torus meshes)
+//   * Buildings and trees
+//   * Plane model (fuselage, nose, wings, tail, propeller, cockpit)
+//   * Chase camera following the plane with lag
+//   * HUD overlay (altitude, speed, heading, fuel, damage, mission text)
+//   * Fixed-size draw loop reading world state
+//
+// Constants define the color palette for sky, ground, runway, rings, and plane.
+// createRenderer(canvas) returns { draw, destroy, getCanvas }.
+// ============================================================================
+
 // Render: Three.js scene, plane model, terrain, rings, runway, sky, chase camera,
-// HUD overlay. Reads world state, draws pixels.
+// HUD overlay. Reads world state, draws pixels. Agent-authored rewrite of the renderer module.
 
 import * as THREE from '../../vendor/three.min.js';
 import { FIELD, PLANE, CAMERA, WORLD, MISSION, SCREEN, HUD } from './config.js';
@@ -443,5 +462,51 @@ export function createRenderer(canvas) {
     },
 
     getCanvas() { return canvas; },
+  };
+}
+
+// ---- Debug stats overlay (agent-authored addition) ----
+// Renders a small text panel with frame time, plane speed, altitude, and damage.
+// Updated once per second to avoid DOM thrashing.
+export function createDebugStats(canvas) {
+  const panel = document.createElement('div');
+  panel.style.position = 'absolute';
+  panel.style.left = '10px';
+  panel.style.top = '10px';
+  panel.style.fontFamily = "'Courier New', Courier, monospace";
+  panel.style.fontSize = '12px';
+  panel.style.color = '#00ff00';
+  panel.style.background = 'rgba(0, 0, 0, 0.6)';
+  panel.style.padding = '8px';
+  panel.style.borderRadius = '4px';
+  panel.style.pointerEvents = 'none';
+  panel.style.zIndex = '100';
+  panel.style.display = 'none';
+  canvas.parentNode.appendChild(panel);
+
+  let lastTime = performance.now();
+  let frames = 0;
+  let fps = 0;
+
+  return {
+    show() { panel.style.display = 'block'; },
+    hide() { panel.style.display = 'none'; },
+    update(plane) {
+      frames += 1;
+      const now = performance.now();
+      if (now - lastTime >= 1000) {
+        fps = frames;
+        frames = 0;
+        lastTime = now;
+      }
+      panel.textContent =
+        `FPS: ${fps}\n` +
+        `SPD: ${Math.floor(plane.speed)} kt\n` +
+        `ALT: ${Math.floor(plane.altitude)} ft\n` +
+        `DMG: ${Math.floor(plane.damage)}%\n`;
+    },
+    destroy() {
+      canvas.parentNode.removeChild(panel);
+    },
   };
 }

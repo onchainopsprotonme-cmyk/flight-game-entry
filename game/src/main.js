@@ -1,3 +1,17 @@
+// ============================================================================
+// Flight Game — Entry Point and Game Loop (main.js)
+// Agent-authored rewrite.
+//
+// This module boots the game and runs the fixed-step game loop:
+//   * Imports THREE.js, config, input, world, renderer
+//   * State machine: title -> play -> paused / mission complete / game over
+//   * startGame() / endGame() transitions
+//   * step(dt, input) advances the world and checks crash / mission events
+//   * frame(now) runs the render loop with accumulator-based fixed steps
+//   * runShot(name) runs headless simulation frames for screenshot capture
+//   * URL ?shot= parameter triggers screenshot mode for title, play, mission
+// ============================================================================
+
 // Main: boot, game loop, state machine. Title -> play -> paused / mission complete / game over.
 
 import * as THREE from '../../vendor/three.min.js';
@@ -73,6 +87,33 @@ function runShot(name) {
   render.draw(world.state, screen, dummyInput);
   window.__shotReady = true;
 }
+
+// ---- Agent-authored additions: shot stats and frame counter ----
+// Cumulative counters exposed for the screenshot harness and HUD debug.
+const shotStats = { frames: 0, shots: 0, lastShot: null };
+
+export function getShotStats() {
+  return { ...shotStats };
+}
+
+function runShotWithStats(name) {
+  shotStats.shots += 1;
+  shotStats.lastShot = name;
+  runShot(name);
+}
+
+const originalRunShot = runShot;
+window.runShot = runShotWithStats;
+
+// Frame counter incremented each draw call for diagnostics.
+let frameCount = 0;
+const originalFrame = frame;
+frame = function frame(now) {
+  frameCount += 1;
+  shotStats.frames = frameCount;
+  originalFrame(now);
+};
+
 
 const params = new URLSearchParams(window.location.search);
 const shot = params.get('shot');

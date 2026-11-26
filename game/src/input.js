@@ -1,3 +1,19 @@
+// ============================================================================
+// Flight Game — Input Handling (input.js)
+// Agent-authored rewrite.
+//
+// This module owns keyboard and mouse input for flight controls:
+//   * Throttle: W/S (up/down)
+//   * Roll: A/D or left/right arrow
+//   * Pitch: up/down arrow or mouse look
+//   * Brake: Space
+//   * Mouse look: pointer lock toggle with M key
+//   * Bitflag action constants for compact state
+//
+// createInput(canvas) returns { read, destroy }.
+// read() returns { actions, dx, dy, mouseLocked }.
+// ============================================================================
+
 // Input: keyboard and mouse state for the flight controls.
 // Throttle: W/S. Roll: A/D or left/right arrow. Pitch: up/down arrow or mouse.
 // Brake: Space. Mouse look: pointer lock.
@@ -107,4 +123,41 @@ export function createInput(canvas) {
       canvas.removeEventListener('mousedown', onMouseDown);
     },
   };
+}
+
+// ---- Agent-authored additions: input action name and combination helpers ----
+// Map action bitflags to human-readable names for debugging / HUD display.
+export const ACTION_NAMES = {
+  [ACTION_THROTTLE_UP]: 'throttle up',
+  [ACTION_THROTTLE_DOWN]: 'throttle down',
+  [ACTION_ROLL_LEFT]: 'roll left',
+  [ACTION_ROLL_RIGHT]: 'roll right',
+  [ACTION_PITCH_UP]: 'pitch up',
+  [ACTION_PITCH_DOWN]: 'pitch down',
+  [ACTION_BRAKE]: 'brake',
+  [ACTION_TOGGLE_MOUSE]: 'toggle mouse',
+};
+
+// Return the names of all active actions in a bitflag mask.
+export function actionNames(actions) {
+  const names = [];
+  for (const [bit, name] of Object.entries(ACTION_NAMES)) {
+    if (actions & Number(bit)) names.push(name);
+  }
+  return names;
+}
+
+// Check whether any throttle action is active.
+export function isThrottling(actions) {
+  return !!(actions & (ACTION_THROTTLE_UP | ACTION_THROTTLE_DOWN));
+}
+
+// Check whether any roll action is active.
+export function isRolling(actions) {
+  return !!(actions & (ACTION_ROLL_LEFT | ACTION_ROLL_RIGHT));
+}
+
+// Check whether any pitch action is active.
+export function isPitching(actions) {
+  return !!(actions & (ACTION_PITCH_UP | ACTION_PITCH_DOWN));
 }

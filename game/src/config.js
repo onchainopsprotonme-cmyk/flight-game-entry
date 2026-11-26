@@ -1,3 +1,21 @@
+// ============================================================================
+// Flight Game — Configuration Constants (config.js)
+// Agent-authored rewrite.
+//
+// All game tuning constants live here in one place:
+//   * FIELD — play area size, ground level, tile size, view distance
+//   * PLANE — mass, thrust, speed, lift/drag, roll/pitch/yaw rates, fuel, damage
+//   * CAMERA — chase distance, height, lag, look-ahead
+//   * WORLD — gravity, wind, thermal lift
+//   * MISSION — ring radius/spacing, rings per mission, landing thresholds, refuel
+//   * HUD — font sizes, margins, panel width
+//   * SCREEN — state machine string constants
+//   * INPUT — deadzone, mouse sensitivity
+//   * DEBUG — collision boxes, ring numbers, frame time logging
+//   * AUDIO — enabled, engine volume, wind volume
+//
+// ============================================================================
+
 // Flight game configuration constants. One clear job: every number the game tunes itself by.
 
 export const FIELD = {
@@ -82,3 +100,26 @@ export const AUDIO = {
   engineVolume: 0.5,
   windVolume: 0.3,
 };
+
+// ---- Agent-authored additions: difficulty presets ----
+// Named difficulty configurations used to scale plane handling and mission
+// difficulty. Each preset overrides a subset of PLANE / MISSION values.
+export const DIFFICULTY = {
+  easy: {
+    plane: { rollRate: 120, pitchRate: 90, yawRate: 40, stability: 0.95, maxSpeed: 300 },
+    mission: { ringSpacing: 500, ringsPerMission: 4, landSpeedMax: 110, landVerticalSpeedMax: 12 },
+  },
+  normal: {
+    plane: { rollRate: 90, pitchRate: 70, yawRate: 30, stability: 0.85, maxSpeed: 260 },
+    mission: { ringSpacing: 400, ringsPerMission: 6, landSpeedMax: 90, landVerticalSpeedMax: 8 },
+  },
+  hard: {
+    plane: { rollRate: 70, pitchRate: 50, yawRate: 20, stability: 0.75, maxSpeed: 220 },
+    mission: { ringSpacing: 300, ringsPerMission: 8, landSpeedMax: 70, landVerticalSpeedMax: 5 },
+  },
+};
+
+// Return a difficulty preset by name, falling back to 'normal'.
+export function getDifficulty(name) {
+  return DIFFICULTY[name] ?? DIFFICULTY.normal;
+}
