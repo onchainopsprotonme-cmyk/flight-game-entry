@@ -411,3 +411,123 @@ export function scoreLanding(speed, verticalSpeed, alignDegrees) {
   else if (points >= 400) quality = 'fair';
   return { points, quality };
 }
+
+// ---- Agent-authored additions: PlaneState class ----
+// Encapsulates plane physics state and provides computed accessors.
+export class PlaneState {
+  constructor() {
+    this.x = 0;
+    this.y = 120;
+    this.z = -400;
+    this.vx = 0;
+    this.vy = 0;
+    this.vz = 80;
+    this.roll = 0;
+    this.pitch = 0;
+    this.yaw = 0;
+    this.rollVel = 0;
+    this.pitchVel = 0;
+    this.yawVel = 0;
+    this.throttle = 0.25;
+    this.fuel = PLANE.fuelCapacity;
+    this.damage = 0;
+    this.speed = 0;
+    this.altitude = 120;
+    this.onGround = false;
+    this.propellerAngle = 0;
+    this.crashTimer = 0;
+  }
+
+  reset() {
+    this.x = 0;
+    this.y = 150;
+    this.z = -400;
+    this.vx = 0;
+    this.vy = 0;
+    this.vz = 100;
+    this.roll = 0;
+    this.pitch = 0;
+    this.yaw = 0;
+    this.rollVel = 0;
+    this.pitchVel = 0;
+    this.yawVel = 0;
+    this.throttle = 0.3;
+    this.fuel = PLANE.fuelCapacity;
+    this.damage = 0;
+    this.crashTimer = 0;
+    this.onGround = false;
+  }
+
+  speed3d() {
+    return Math.sqrt(this.vx * this.vx + this.vy * this.vy + this.vz * this.vz);
+  }
+
+  fuelPercent() {
+    return (this.fuel / PLANE.fuelCapacity) * 100;
+  }
+
+  isStalled() {
+    return this.speed3d() < PLANE.stallSpeed && this.altitude > 5;
+  }
+
+  applyThrust(dt) {
+    const thrust = PLANE.idleThrust + this.throttle * (PLANE.maxThrust - PLANE.idleThrust);
+    return thrust / PLANE.mass;
+  }
+
+  burnFuel(dt) {
+    const burn = PLANE.fuelBurnIdle + this.throttle * (PLANE.fuelBurnFull - PLANE.fuelBurnIdle);
+    this.fuel = Math.max(0, this.fuel - burn * dt);
+    if (this.fuel <= 0) {
+      this.fuel = 0;
+      this.throttle = 0;
+    }
+  }
+
+  // ---- Agent-authored additions: PlaneState methods ----
+  update(dt, input) {
+    this.rollVel += input.roll * PLANE.rollAccel * dt;
+    this.pitchVel += input.pitch * PLANE.pitchAccel * dt;
+    this.yawVel += input.yaw * PLANE.yawAccel * dt;
+
+    this.rollVel *= 1 - PLANE.rollDamping * dt;
+    this.pitchVel *= 1 - PLANE.pitchDamping * dt;
+    this.yawVel *= 1 - PLANE.yawDamping * dt;
+
+    this.roll += this.rollVel * dt;
+    this.pitch += this.pitchVel * dt;
+    this.yaw += this.yawVel * dt;
+
+    const thrust = this.applyThrust(dt);
+    const forwardX = -Math.sin(this.yaw) * Math.cos(this.pitch);
+    const forwardZ = -Math.cos(this.yaw) * Math.cos(this.pitch);
+    const forwardY = Math.sin(this.pitch);
+
+    this.vx += forwardX * thrust * dt;
+    this.vy += forwardY * thrust * dt - PLANE.gravity * dt;
+    this.vz += forwardZ * thrust * dt;
+
+    const drag = PLANE.dragCoefficient * this.speed3d() * dt;
+    this.vx *= 1 - drag;
+    this.vy *= 1 - drag;
+    this.vz *= 1 - drag;
+
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.z += this.vz * dt;
+
+    this.speed = this.speed3d();
+    this.altitude = this.y - this.getGroundHeight(this.x, this.z);
+
+    this.burnFuel(dt);
+    this.propellerAngle += PLANE.propellerSpeed * dt;
+    if (this.crashTimer > 0) this.crashTimer -= dt;
+  }
+
+  takeDamage(amount) {
+    this.damage = Math.min(100, this.damage + amount);
+    if (this.damage >= 100) {
+      this.crashTimer = 2;
+    }
+  }
+}

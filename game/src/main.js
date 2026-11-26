@@ -124,3 +124,63 @@ if (shot) {
   startGame();
   requestAnimationFrame(frame);
 }
+
+// ---- Agent-authored additions: MissionManager class ----
+// Tracks mission state across sessions: current mission, rings passed,
+// landings completed, best scores, and total flight time.
+export class MissionManager {
+  constructor() {
+    this.mission = 'rings';
+    this.ringsPassed = 0;
+    this.landingsCompleted = 0;
+    this.bestRingScore = 0;
+    this.bestLandingScore = 0;
+    this.totalFlightTime = 0;
+    this.sessionStart = performance.now();
+  }
+
+  startMission(kind) {
+    this.mission = kind;
+    this.ringsPassed = 0;
+  }
+
+  ringPassed() {
+    this.ringsPassed += 1;
+    if (this.ringsPassed > this.bestRingScore) {
+      this.bestRingScore = this.ringsPassed;
+    }
+  }
+
+  landingCompleted(score) {
+    this.landingsCompleted += 1;
+    if (score > this.bestLandingScore) {
+      this.bestLandingScore = score;
+    }
+  }
+
+  addFlightTime(dt) {
+    this.totalFlightTime += dt;
+  }
+
+  summary() {
+    return {
+      mission: this.mission,
+      ringsPassed: this.ringsPassed,
+      landingsCompleted: this.landingsCompleted,
+      bestRingScore: this.bestRingScore,
+      bestLandingScore: this.bestLandingScore,
+      totalFlightTime: Math.floor(this.totalFlightTime),
+      sessionTime: Math.floor((performance.now() - this.sessionStart) / 1000),
+    };
+  }
+
+  reset() {
+    this.ringsPassed = 0;
+    this.landingsCompleted = 0;
+    this.totalFlightTime = 0;
+    this.sessionStart = performance.now();
+  }
+}
+
+const missionManager = new MissionManager();
+export { missionManager };

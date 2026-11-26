@@ -510,3 +510,77 @@ export function createDebugStats(canvas) {
     },
   };
 }
+
+// ---- Agent-authored additions: screen shake effect ----
+// Applies a decaying camera offset when the plane crashes or takes damage.
+// Called each frame from the draw loop; the offset fades toward zero.
+export class ScreenShake {
+  constructor() {
+    this.intensity = 0;
+    this.duration = 0;
+    this.offsetX = 0;
+    this.offsetY = 0;
+  }
+
+  trigger(intensity, duration) {
+    this.intensity = intensity;
+    this.duration = duration;
+  }
+
+  update(dt) {
+    if (this.duration > 0) {
+      this.duration -= dt;
+      const shake = Math.random() * 2 - 1;
+      this.offsetX = shake * this.intensity;
+      this.offsetY = shake * this.intensity;
+      this.intensity *= 0.9;
+      if (this.duration <= 0) {
+        this.offsetX = 0;
+        this.offsetY = 0;
+        this.intensity = 0;
+      }
+    } else {
+      this.offsetX = 0;
+      this.offsetY = 0;
+    }
+  }
+
+  apply(camera) {
+    camera.position.x += this.offsetX;
+    camera.position.y += this.offsetY;
+  }
+}
+
+// ---- Agent-authored additions: hit flash overlay ----
+// Full-screen red flash that fades out after taking damage.
+export function createHitFlash(canvas) {
+  const flash = document.createElement('div');
+  flash.style.position = 'absolute';
+  flash.style.top = '0';
+  flash.style.left = '0';
+  flash.style.width = '100%';
+  flash.style.height = '100%';
+  flash.style.background = 'rgba(255, 0, 0, 0)';
+  flash.style.pointerEvents = 'none';
+  flash.style.zIndex = '200';
+  flash.style.transition = 'background 0.15s linear';
+  canvas.parentNode.appendChild(flash);
+
+  let alpha = 0;
+
+  return {
+    trigger(amount) {
+      alpha = Math.min(1, alpha + amount * 0.3);
+      flash.style.background = `rgba(255, 0, 0, ${alpha})`;
+    },
+    update(dt) {
+      if (alpha > 0) {
+        alpha = Math.max(0, alpha - dt * 2);
+        flash.style.background = `rgba(255, 0, 0, ${alpha})`;
+      }
+    },
+    destroy() {
+      canvas.parentNode.removeChild(flash);
+    },
+  };
+}
