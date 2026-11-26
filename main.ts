@@ -62,7 +62,7 @@ const entryMeta = {
   name: 'SkyRunner Flight Game',
   version: entryVersion,
   description: 'Three.js flight game: fly through rings, land on runway.',
-  built: new Date().toISOString(),
+  built: '2026-11-26T00:00:00.000Z',
   entrypoint: 'main.ts',
 };
 

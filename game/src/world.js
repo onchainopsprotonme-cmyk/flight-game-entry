@@ -41,8 +41,17 @@ import {
 const TWO_PI = Math.PI * 2;
 const DEG_TO_RAD = Math.PI / 180;
 
+// Seeded PRNG (xorshift32) so world generation is deterministic across runs.
+let seed = 0x12345678;
+function seededRandom() {
+  seed ^= seed << 13;
+  seed ^= seed >>> 17;
+  seed ^= seed << 5;
+  return (seed >>> 0) / 0x100000000;
+}
+
 function randRange(min, max) {
-  return min + Math.random() * (max - min);
+  return min + seededRandom() * (max - min);
 }
 
 function clamp(value, min, max) {
@@ -121,7 +130,7 @@ export function createWorld() {
         width: randRange(12, 40),
         height: randRange(8, 45),
         depth: randRange(12, 40),
-        color: 0x556644 + Math.floor(Math.random() * 0x111111),
+        color: 0x556644 + Math.floor(seededRandom() * 0x111111),
       });
     }
     for (let i = 0; i < count * 3; i += 1) {
@@ -140,12 +149,13 @@ export function createWorld() {
     for (let i = 0; i < MISSION.ringsPerMission; i += 1) {
       const z = startZ - (i + 1) * MISSION.ringSpacing;
       const x = randRange(-150, 150);
-      const y = 100 + i * 15 + Math.random() * 60;
+      const y = 100 + i * 15 + seededRandom() * 60;
       rings.push({ x, y, z, radius: MISSION.ringRadius, passed: false });
     }
   }
 
   function reset() {
+    seed = 0x12345678;
     plane.x = 0;
     plane.y = 150;
     plane.z = -400;
